@@ -42,13 +42,13 @@ import com.example.contacts.ui.theme.ContactsTheme
 
 class AddContactActivity : ComponentActivity() {
 
-    private lateinit var coursesItems: List<Contacts>
+    private lateinit var contactsItems: List<Contacts>
 
     private val addContactLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK)
-            coursesItems = ContactsDatabase.getInstance(this).getContactsDao().getAllContacts()
+            contactsItems = ContactsDatabase.getInstance(this).getContactsDao().getAllContacts()
     }
 
 
