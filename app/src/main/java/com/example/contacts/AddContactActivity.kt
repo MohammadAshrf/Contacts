@@ -1,9 +1,11 @@
 package com.example.contacts
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,14 +30,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.contacts.database.Contacts
+import com.example.contacts.database.ContactsDatabase
 import com.example.contacts.ui.theme.ContactsTheme
 
 class AddContactActivity : ComponentActivity() {
+
+    private lateinit var coursesItems: List<Contacts>
+
+    private val addContactLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK)
+            coursesItems = ContactsDatabase.getInstance(this).getContactsDao().getAllContacts()
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -47,7 +63,15 @@ class AddContactActivity : ComponentActivity() {
                 ) {
                     AddContactContent(
                         onNavigationClick = { finish() },
-                        onButtonClick = {}
+                        onSaveButtonClick = {
+                            addContactLauncher.launch(
+                                Intent(
+                                    this, MainActivity::class.java
+                                )
+                            )
+
+                            finish()
+                        }
                     )
                 }
             }
@@ -60,7 +84,7 @@ class AddContactActivity : ComponentActivity() {
 @Composable
 fun AddContactContent(
     onNavigationClick: () -> Unit,
-    onButtonClick: () -> Unit
+    onSaveButtonClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -78,7 +102,8 @@ fun AddContactContent(
                 .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val title = remember {
+            val context = LocalContext.current
+            val name = remember {
                 mutableStateOf("")
             }
             val number = remember {
@@ -86,7 +111,7 @@ fun AddContactContent(
             }
             ContactTextField(
                 label = "Contacts Name",
-                mutableState = title,
+                mutableState = name,
                 keyboardType = KeyboardType.Text,
                 maxChar = 30
             )
@@ -98,9 +123,19 @@ fun AddContactContent(
                 maxChar = 11
             )
             Button(
-                onClick = { onButtonClick() },
+                onClick = {
+                    //call room database to save contacts
+                    ContactsDatabase.getInstance(context).getContactsDao()
+                        .insertContact(
+                            Contacts(
+                                name = name.value,
+                                number = number.value
+                            )
+                        )
+                    onSaveButtonClick()
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.colorOrange)),
-                enabled = number.value.length > 10
+                enabled = name.value.isNotEmpty() && number.value.length > 10
             )
             {
                 Text(text = "Save Contacts")
